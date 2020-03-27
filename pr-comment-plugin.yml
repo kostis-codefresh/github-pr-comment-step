@@ -1,0 +1,94 @@
+version: '1.0'
+kind: step-type
+metadata:
+  name: kostis-codefresh/github-pr-comment
+  isPublic: true
+  description: >-
+    This pipeline plugin adds comments to Github pull requests
+  sources:
+    - 'https://github.com/kostis-codefresh/github-pr-comment-step'
+  stage: incubating
+  maintainers:
+    - name: Kostis Kapelonis
+  categories:
+    - git
+  official: false
+  tags: []
+  icon:
+    type: svg
+    url: https://cdn.worldvectorlogo.com/logos/github.svg
+    background: '#f4f4f4'
+  examples:
+    - description: example-1
+      workflow:
+        version: '1.0'
+        steps:
+          checkout_many_projects:
+            title: Checking out my Git projects
+            type: kostis-codefresh/multi-git-clone
+            arguments:
+              GIT_REVISION: 'master'
+              GIT_PROVIDER: 'github'
+              GIT_PROJECTS: 
+                - 'codefresh-contrib/ruby-on-rails-sample-app'
+                - 'kubernetes/sample-apiserver'
+                - 'kostis-codefresh/nestjs-example'
+                - 'spring-projects/spring-petclinic'
+  latest: true
+  version: 1.0.0
+spec:
+  arguments: |-
+    {
+        "definitions": {},
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "patterns": [],
+        "required": [
+          "GIT_REVISION",
+          "GIT_PROVIDER"
+        ],
+        "properties": {
+            "GIT_REVISION": {
+                "type": "string",
+                "description": "branch or tag or revision to checkout (same for all projects)"
+            },
+            "GIT_PROVIDER": {
+                "type": "string",
+                "description": "Name of git provider to use from Codefresh integrations screen"
+            }
+            
+        }
+    }
+  steps:
+    get_githut_token:
+       title: "Get token"
+       type: "freestyle" 
+       arguments:
+         image: "codefresh/cli"
+         environment:
+           - GIT_PROVIDER_NAME=github-1
+         commands:
+           - cf_export GITHUB_TOKEN=$(codefresh get context $GIT_PROVIDER_NAME --decrypt -o yaml | yq -y .spec.data.auth.password)        
+    create_pr_comment:
+       title: "Write comment"
+       type: "freestyle" 
+       arguments:
+         image: "cloudposse/github-commenter"
+         environment:
+           - GITHUB_OWNER=${{CF_REPO_OWNER}} 
+           - GITHUB_REPO=${{CF_REPO_NAME}}
+           - GITHUB_COMMENT_TYPE=pr
+           - GITHUB_PR_ISSUE_NUMBER=1
+           - GITHUB_COMMENT="[CI] Staging environment is at http://staging-docs.codefresh.io.s3-website.us-east-1.amazonaws.com/${{CF_BRANCH_TAG_NORMALIZED}}/docs/"
+           - GITHUB_DELETE_COMMENT_REGEX=staging
+         commands:
+           - github-commenter
+
+
+
+
+
+
+
+
