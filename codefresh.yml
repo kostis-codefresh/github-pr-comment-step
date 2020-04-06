@@ -1,0 +1,26 @@
+version: "1.0"
+stages:
+  - "clone"
+  - "update"
+
+steps:
+  clone:
+    title: "Cloning repository"
+    type: "git-clone"
+    repo: "kostis-codefresh/github-pr-comment-step"
+    revision: "master"
+    git: "github-1"
+    stage: "clone"
+
+  upload:
+    title: "Upload to marketplace"
+    type: "freestyle" 
+    image: "codefresh/cli" 
+    working_directory: "${{clone}}" 
+    commands:
+      - "codefresh replace step-types kostis-codefresh/github-pr-comment -f pr-comment-plugin.yml"
+    stage: "update"
+    when:
+      branch:
+        only:
+          - master
