@@ -19,21 +19,29 @@ metadata:
     url: https://cdn.worldvectorlogo.com/logos/github.svg
     background: '#f4f4f4'
   examples:
-    - description: example-1
+    - description: automatic-comment-pr
       workflow:
         version: '1.0'
         steps:
-          checkout_many_projects:
-            title: Checking out my Git projects
-            type: kostis-codefresh/multi-git-clone
+          add_commenton_current_pr_from_trigger:
+            title: Adding comment on this PR
+            type: kostis-codefresh/github-pr-comment
+            fail_fast: false
             arguments:
-              GIT_REVISION: 'master'
-              GIT_PROVIDER: 'github'
-              GIT_PROJECTS: 
-                - 'codefresh-contrib/ruby-on-rails-sample-app'
-                - 'kubernetes/sample-apiserver'
-                - 'kostis-codefresh/nestjs-example'
-                - 'spring-projects/spring-petclinic'
+              PR_COMMENT_TEXT: 'Your staging environment is ready at http://example.com/${{CF_BRANCH_TAG_NORMALIZED}}/preview'
+              GIT_PROVIDER_NAME: 'github'
+    - description: commment-on-specific-pr
+      workflow:
+        version: '1.0'
+        steps:
+          add_pr_comment_directly:
+            title: Adding comment on another PR
+            type: kostis-codefresh/github-pr-comment
+            fail_fast: false
+            arguments:
+              PR_COMMENT_TEXT: 'Example comment on PR 45'
+              GIT_PROVIDER_NAME: 'github'
+              CF_PULL_REQUEST_NUMBER: 45
   latest: true
   version: 1.0.0
 spec:
@@ -45,15 +53,22 @@ spec:
         "additionalProperties": false,
         "patterns": [],
         "required": [
-          "GIT_REVISION",
-          "GIT_PROVIDER"
+          "GIT_PROVIDER_NAME",
+          "PR_COMMENT_TEXT"
         ],
+        "optional": [
+          "CF_PULL_REQUEST_NUMBER"
+        ],        
         "properties": {
-            "GIT_REVISION": {
-                "type": "string",
-                "description": "branch or tag or revision to checkout (same for all projects)"
+            "CF_PULL_REQUEST_NUMBER": {
+                "type": "number",
+                "description": "Github pull request number (Automatically set in PR trigger events)"
             },
-            "GIT_PROVIDER": {
+            "PR_COMMENT_TEXT": {
+                "type": "string",
+                "description": "Text body of the comment to be created"
+            },            
+            "GIT_PROVIDER_NAME": {
                 "type": "string",
                 "description": "Name of git provider to use from Codefresh integrations screen"
             }
@@ -63,27 +78,23 @@ spec:
   steps:
     get_githut_token:
        title: "Get token"
-       type: "freestyle" 
-       arguments:
-         image: "codefresh/cli"
-         environment:
-           - GIT_PROVIDER_NAME=github-1
-         commands:
-           - cf_export GITHUB_TOKEN=$(codefresh get context $GIT_PROVIDER_NAME --decrypt -o yaml | yq -y .spec.data.auth.password)        
+       image: codefresh/cli
+       environment:
+         - GIT_PROVIDER_NAME=${{GIT_PROVIDER_NAME}}       
+       commands:
+         - cf_export GITHUB_TOKEN=$(codefresh get context $GIT_PROVIDER_NAME --decrypt -o yaml | yq -y .spec.data.auth.password)        
     create_pr_comment:
        title: "Write comment"
-       type: "freestyle" 
-       arguments:
-         image: "cloudposse/github-commenter"
-         environment:
-           - GITHUB_OWNER=${{CF_REPO_OWNER}} 
-           - GITHUB_REPO=${{CF_REPO_NAME}}
-           - GITHUB_COMMENT_TYPE=pr
-           - GITHUB_PR_ISSUE_NUMBER=1
-           - GITHUB_COMMENT="[CI] Staging environment is at http://staging-docs.codefresh.io.s3-website.us-east-1.amazonaws.com/${{CF_BRANCH_TAG_NORMALIZED}}/docs/"
-           - GITHUB_DELETE_COMMENT_REGEX=staging
-         commands:
-           - github-commenter
+       image: cloudposse/github-commenter      
+       environment:
+         - GITHUB_OWNER=${{CF_REPO_OWNER}} 
+         - GITHUB_REPO=${{CF_REPO_NAME}}
+         - GITHUB_COMMENT_TYPE=pr
+         - GITHUB_PR_ISSUE_NUMBER=${{CF_PULL_REQUEST_NUMBER}}
+         - GITHUB_COMMENT=${{PR_COMMENT_TEXT}}
+#         - GITHUB_DELETE_COMMENT_REGEX=staging
+       commands:
+         - github-commenter
 
 
 
