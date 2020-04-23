@@ -4,7 +4,7 @@ metadata:
   name: kostis-codefresh/github-pr-comment
   isPublic: true
   description: >-
-    This pipeline plugin adds comments to Github pull requests
+    This pipeline plugin adds comments to GitHub pull requests
   sources:
     - 'https://github.com/kostis-codefresh/github-pr-comment-step'
   stage: incubating
@@ -76,7 +76,7 @@ spec:
         }
     }
   steps:
-    get_githut_token:
+    get_github_token:
        title: "Get token"
        image: codefresh/cli
        environment:
