@@ -78,7 +78,7 @@ spec:
   steps:
     get_github_token:
        title: "Get token"
-       image: codefresh/cli
+       image: codefresh/cli:0.89.6
        environment:
          - GIT_PROVIDER_NAME=${{GIT_PROVIDER_NAME}}       
        commands:
